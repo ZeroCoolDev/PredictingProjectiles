@@ -23,15 +23,4 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-private:
-	// How fast the projectile moves (constant speed)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float Speed = 0.f;
-
-	// Visual form of the projectile
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* ProjectileMesh = nullptr;
-
-	// Distance traveled before destroying itself
-	float KillDistance = 500.f;
 };
