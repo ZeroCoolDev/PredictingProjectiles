@@ -33,7 +33,21 @@ public:
 
 
 private:
+	// Rotate AI so that it always faces the target
 	void FaceTarget(float DeltaTime);
+
+	// Given a constant speed, and a targets movement, determine how far to lead the target in order to hit it
+	FVector PredictTargetLocation(const float ProjectileSpeed);
+
+	// Fire projectiles mercilessly at the target if they are within range
+	UFUNCTION()
+	void FireProjectile();
+
+	// Turn on the fire timer
+	void EnableAggro();
+
+	// Turn off the fire timer
+	void DisableAggro();
 
 	// Proximity trigger acting as our AI's eyes. Players within the trigger are now targets
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
@@ -49,4 +63,8 @@ private:
 
 	// For now this AI can only track whoever was the last player in the trigger
 	class APredictingCharacter* TargetChar = nullptr;
+
+	// Interval in seconds that we should fire a projectile
+	float FireInterval = 1.f;
+	FTimerHandle FireTimer;
 };

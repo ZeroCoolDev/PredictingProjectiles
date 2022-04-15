@@ -15,6 +15,10 @@ public:
 	// Sets default values for this actor's properties
 	AZCLinearProjectile();
 
+	void Init(const FVector& StartLoc, const FVector& EndLoc);
+
+	FORCEINLINE float GetSpeed() { return Speed; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

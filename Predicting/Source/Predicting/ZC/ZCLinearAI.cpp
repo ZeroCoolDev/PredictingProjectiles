@@ -1,4 +1,5 @@
 #include "Predicting/ZC/ZCLinearAI.h"
+#include "Predicting/ZC/ZCLinearProjectile.h"
 #include "Predicting/PredictingCharacter.h"
 
 #include "Components/SphereComponent.h"
@@ -64,6 +65,7 @@ void AZCLinearAI::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		if (TargetChar == nullptr)
 		{
 			TargetChar = Cast<APredictingCharacter>(OtherActor);
+			EnableAggro();
 			UE_LOG(LogTemp, Warning, TEXT("Target updated to be [%d]"), TargetChar->GetUniqueID());
 		}
 	}
@@ -76,6 +78,7 @@ void AZCLinearAI::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 		// If our target has left our trigger range, forget about them completely
 		if (TargetChar && TargetChar->GetUniqueID() == OtherActor->GetUniqueID())
 		{
+			DisableAggro();
 			TargetChar = nullptr;
 		}
 
@@ -140,6 +143,52 @@ void AZCLinearAI::FaceTarget(float DeltaTime)
 			// Set new posiiton
 			SetActorRotation(CurrentRot);
 		}
+	}
+}
+
+FVector AZCLinearAI::PredictTargetLocation(const float ProjectileSpeed)
+{	
+	FVector EndLocation = FVector::ZeroVector;
+	
+	// For now just fire at the target
+	if (TargetChar)
+	{
+		return TargetChar->GetActorLocation();
+	}
+
+	return EndLocation;
+}
+
+void AZCLinearAI::FireProjectile()
+{
+	if (GetWorld())
+	{
+		if (ProjectileClass)
+		{
+			AZCLinearProjectile* Proj = GetWorld()->SpawnActor<AZCLinearProjectile>(ProjectileClass);
+			if (Proj)
+			{
+				FVector ExpectedTargetLoc = PredictTargetLocation(Proj->GetSpeed());
+				Proj->Init(GetActorLocation(), ExpectedTargetLoc);
+			}
+		}
+	}
+}
+
+void AZCLinearAI::EnableAggro()
+{
+	if (GetWorldTimerManager().IsTimerActive(FireTimer))
+	{
+		GetWorldTimerManager().ClearTimer(FireTimer);
+	}
+	GetWorldTimerManager().SetTimer(FireTimer, this, &AZCLinearAI::FireProjectile, FireInterval, false);
+}
+
+void AZCLinearAI::DisableAggro()
+{
+	if (GetWorldTimerManager().IsTimerActive(FireTimer))
+	{
+		GetWorldTimerManager().ClearTimer(FireTimer);
 	}
 }
 
