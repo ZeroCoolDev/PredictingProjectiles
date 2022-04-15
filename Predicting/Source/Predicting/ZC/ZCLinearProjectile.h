@@ -41,8 +41,12 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
 	class USceneComponent* SceneComp = nullptr;
 
+	// 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* StaticMesh = nullptr;
+
 	// Distance traveled before destroying itself
-	float KillDistance = 50.f;
+	float KillDistance = 15.f;
 	
 	// Intended impact point of then projectile
 	FVector ImpactPoint;

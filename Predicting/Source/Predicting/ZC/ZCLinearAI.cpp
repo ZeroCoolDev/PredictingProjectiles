@@ -4,6 +4,7 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
 
 #ifndef FAR_AWAY
@@ -66,7 +67,6 @@ void AZCLinearAI::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		{
 			TargetChar = Cast<APredictingCharacter>(OtherActor);
 			EnableAggro();
-			UE_LOG(LogTemp, Warning, TEXT("Target updated to be [%d]"), TargetChar->GetUniqueID());
 		}
 	}
 }
@@ -81,8 +81,6 @@ void AZCLinearAI::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 			DisableAggro();
 			TargetChar = nullptr;
 		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Object [%d] has exited the trigger"), OtherActor->GetUniqueID());
 	}
 }
 
@@ -146,17 +144,120 @@ void AZCLinearAI::FaceTarget(float DeltaTime)
 	}
 }
 
-FVector AZCLinearAI::PredictTargetLocation(const float ProjectileSpeed)
+/*
+	Algorithm Summary:
+		Based off (https://shellsphinx.github.io/images/PredictableProjectiles.pdf)
+
+		Find the targets future position, at time (t), given:
+			- projectile constant velocity
+			- targets current instantaneous velocity (will account for average of history later) and position
+
+		Equation for target's movement
+			X'	= Targets future position
+			Xot = Targets current position (origin)
+			Vt	= Targets instantaneous velocity
+			t	= time
+
+			Linear equation:
+				X' = Xot + (Vt * t)
+
+		Equation for projectile's movement
+			X'	= Projectiles future position
+			Xop	= Projectiles current position (origin)
+			Sp	= Projectiles constant speed
+			t	= time
+
+			Linear equation:
+				X' = Xop + (Sp * t)  
+			Or better the equation of a circle
+				(X' - Xop)^2 = (Sp * t)^2
+
+		Both equations have X' and t.
+		So combine via X' and solve for t which gives us a quadratic that we can solve to get polynomial expansion: a^2 + b + c = 0
+			
+		a = (Vt^2 - Sp^2)
+		b = (2 * (Xot - Xop) * Vt)
+		c = (Xot - Xop)^2	
+
+		then just solve the quadratic which gives (t) and plug back into Equation for target's movement to find X'
+
+	Note: Any vector multiplies are just dot products
+*/
+bool AZCLinearAI::PredictTargetLocation(const float ProjectileSpeed, FVector& OutPredictedLocation)
 {	
-	FVector EndLocation = FVector::ZeroVector;
-	
-	// For now just fire at the target
-	if (TargetChar)
+	if (TargetChar == nullptr)
 	{
-		return TargetChar->GetActorLocation();
+		return false;
 	}
 
-	return EndLocation;
+	const FVector Xot = TargetChar->GetActorLocation();	// Targets current position
+	const FVector Vt = TargetChar->GetVelocity();		// Targets current velocity (speed * direction)
+
+	const float Sp = ProjectileSpeed;					// Projectile constant speed
+	const FVector Xop = GetActorLocation();				// Projectile current position (spawed at AI's position)
+
+	// a = (Vt^2 - Sp^2)
+	float a = FVector::DotProduct(Vt, Vt) - (Sp * Sp);
+
+	const FVector XotDiffXop = Xot - Xop;
+
+	// b = (2 * (Xow - Xop) * Vw)
+	float b = 2 * FVector::DotProduct(XotDiffXop, Vt);
+
+	// c = (Xow - Xop)^2
+	float c = FVector::DotProduct(XotDiffXop, XotDiffXop);
+
+	float t = 0.f;
+
+	// Solve for Time (t) using quadratic
+	if (a == 0.f)
+	{// divide by 0 early out
+		t = -(c / b);
+	}
+	else
+	{
+		// determinant: b^2 - 4ac
+		float det = (b * b) - (4 * a * c);
+		if (det < 0)
+		{// invalid, just use target current position
+			OutPredictedLocation = TargetChar->GetActorLocation();
+			return true;
+		}
+		else if (det == 0)
+		{// t = -b/2a
+			t = -b / (2 * a);
+		}
+		else
+		{
+			// (-b + sqrt(b^2 - 4ac)) / 2a
+			float tPlus = (-b + FMath::Sqrt((b * b) - (4 * a * c))) / (2 * a);
+
+			// (-b - sqrt(b^2 - 4ac)) / 2a
+			float tMinus = (-b - FMath::Sqrt((b * b) - (4 * a * c))) / (2 * a);
+
+			if (tPlus > 0 && tMinus > 0)
+			{
+				t = FMath::Min(tPlus, tMinus);
+			}
+			else if (tPlus > 0)
+			{
+				t = tPlus;
+			}
+			else if (tMinus > 0)
+			{
+				t = tMinus;
+			}
+			else
+			{
+				ensureMsgf(false, TEXT("This should be mathematically impossible for both solutions (if we got this far) to be invalid"));
+				return false;
+			}
+		}
+	}
+
+	// Now that we have Time (t) plug it back into Equation for target's movement
+	OutPredictedLocation = Xot + (Vt * t);
+	return true;
 }
 
 void AZCLinearAI::FireProjectile()
@@ -172,8 +273,28 @@ void AZCLinearAI::FireProjectile()
 				Proj->SetActorRotation(GetActorRotation());
 				Proj->SetActorLocation(GetActorLocation());
 
-				FVector ExpectedTargetLoc = PredictTargetLocation(Proj->GetSpeed());
-				Proj->Init(ExpectedTargetLoc);
+				FVector PredictedTargetLoc;
+				if (PredictTargetLocation(Proj->GetSpeed(), PredictedTargetLoc))
+				{
+					Proj->Init(PredictedTargetLoc);
+
+					DrawDebugSphere(GetWorld(), PredictedTargetLoc, 15.f, 26, FColor::Red, false, 3.f);
+					//DrawDebugBox(GetWorld(), FinalLocation, FVector(20.f, 20.f, 20.f), FQuat(), FColor::Green, true, 10.f);
+
+					FVector DrawDir = PredictedTargetLoc - GetActorLocation();
+					float TotalDist = DrawDir.Size();
+					int NumBlocks = 20;
+					float DistBetweenBlocks = TotalDist / NumBlocks;
+					for (uint8 i = 0; i < NumBlocks; ++i)
+					{
+						const FVector ThisBlockLocation = GetActorLocation() + DrawDir.GetSafeNormal() * ((i + 1) * DistBetweenBlocks);
+						DrawDebugSphere(GetWorld(), ThisBlockLocation, 8.f, 26, FColor::White, false, 3.f);
+					}
+				}
+				else
+				{// If we failed to find a target location just don't fire
+					Proj->Destroy();
+				}
 			}
 		}
 	}
@@ -185,7 +306,7 @@ void AZCLinearAI::EnableAggro()
 	{
 		GetWorldTimerManager().ClearTimer(FireTimer);
 	}
-	GetWorldTimerManager().SetTimer(FireTimer, this, &AZCLinearAI::FireProjectile, FireInterval, false);
+	GetWorldTimerManager().SetTimer(FireTimer, this, &AZCLinearAI::FireProjectile, FireInterval, true);
 }
 
 void AZCLinearAI::DisableAggro()

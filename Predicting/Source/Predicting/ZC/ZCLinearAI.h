@@ -37,7 +37,7 @@ private:
 	void FaceTarget(float DeltaTime);
 
 	// Given a constant speed, and a targets movement, determine how far to lead the target in order to hit it
-	FVector PredictTargetLocation(const float ProjectileSpeed);
+	bool PredictTargetLocation(const float ProjectileSpeed, FVector& OutPredictedLocation);
 
 	// Fire projectiles mercilessly at the target if they are within range
 	UFUNCTION()
@@ -65,6 +65,6 @@ private:
 	class APredictingCharacter* TargetChar = nullptr;
 
 	// Interval in seconds that we should fire a projectile
-	float FireInterval = 1.f;
+	float FireInterval = 2.f;
 	FTimerHandle FireTimer;
 };

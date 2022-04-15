@@ -14,6 +14,15 @@ AZCLinearProjectile::AZCLinearProjectile()
 		SceneComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ProjectileMesh"));
 		SetRootComponent(SceneComp);
 	}
+
+	if (StaticMesh == nullptr)
+	{
+		StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+		if (StaticMesh)
+		{
+			StaticMesh->SetupAttachment(GetRootComponent());
+		}
+	}
 }
 
 void AZCLinearProjectile::Init(const FVector& EndLoc)
