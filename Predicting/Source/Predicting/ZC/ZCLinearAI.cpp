@@ -96,20 +96,34 @@ void AZCLinearAI::FaceTarget()
 	if (TargetChar)
 	{
 		// Compare the forward look dir of the AI and the direction to the target.
+		
 		const FVector AIForwardDir = GetActorForwardVector(); // forward AI direction
 		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + AIForwardDir * FAR_AWAY, FColor:: Blue);
 
 		const FVector DirToTarget = TargetChar->GetActorLocation() - GetActorLocation(); // direction towards target
 		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + DirToTarget * FAR_AWAY, FColor::Yellow);
 
-		float AngleBetween = FVector::DotProduct(AIForwardDir.GetSafeNormal(), DirToTarget.GetSafeNormal());
+		float ArcDistToTarget = FVector::DotProduct(AIForwardDir.GetSafeNormal(), DirToTarget.GetSafeNormal());
 		if(GEngine)
 		{
-			GEngine->AddOnScreenDebugMessage(0, -1.f, FColor::Red, FString::Printf(TEXT("AngleBetween: %f"), AngleBetween));
+			GEngine->AddOnScreenDebugMessage(0, -1.f, FColor::Red, FString::Printf(TEXT("ArcDistToTarget: %f"), ArcDistToTarget));
 		}
+
+		// angle in rad = acos(dot(A,B))
+		float AngleDiffToTargetDeg = FMath::RadiansToDegrees(FMath::Acos(ArcDistToTarget));
+
 		
+		// Determine if the player is on the right or left so we know if we need to + or - the angle
+		
+		const FVector AIRightDir = GetActorRightVector();
+		float AmountRightOrLeft = FVector::DotProduct(AIRightDir.GetSafeNormal(), DirToTarget.GetSafeNormal());
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::White, FString::Printf(TEXT("AmountRightOrLeft (- right), (+ left): %f"), AmountRightOrLeft));
+		}
+
+
 		// Rotate towards the target than many degress.
-		// Use the AI.RightVector to determine what 'towards' means (+ or - angle)
 	}
 }
 
