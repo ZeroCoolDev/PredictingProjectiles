@@ -1,4 +1,5 @@
 #include "Predicting/ZC/ZCLinearAI.h"
+#include "Predicting/PredictingCharacter.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/SceneComponent.h"
@@ -53,7 +54,12 @@ void AZCLinearAI::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	if (OtherActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Object [%d] has entered the trigger"), OtherActor->GetUniqueID());
+		// Only track a new target if we don't already have one
+		if (TargetChar == nullptr)
+		{
+			TargetChar = Cast<APredictingCharacter>(OtherActor);
+			UE_LOG(LogTemp, Warning, TEXT("Target updated to be [%d]"), TargetChar->GetUniqueID());
+		}
 	}
 }
 
@@ -61,6 +67,12 @@ void AZCLinearAI::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 {
 	if (OtherActor)
 	{
+		// If our target has left our trigger range, forget about them completely
+		if (TargetChar && TargetChar->GetUniqueID() == OtherActor->GetUniqueID())
+		{
+			TargetChar = nullptr;
+		}
+
 		UE_LOG(LogTemp, Warning, TEXT("Object [%d] has exited the trigger"), OtherActor->GetUniqueID());
 	}
 }

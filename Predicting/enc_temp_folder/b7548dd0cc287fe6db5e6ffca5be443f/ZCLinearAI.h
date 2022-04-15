@@ -33,8 +33,6 @@ public:
 
 
 private:
-	void FaceTarget();
-
 	// Proximity trigger acting as our AI's eyes. Players within the trigger are now targets
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	class USphereComponent* ProximityTrigger = nullptr;
@@ -46,7 +44,4 @@ private:
 	// The projectile type we spawn when firing
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	class TSubclassOf<class AZCLinearProjectile> ProjectileClass = nullptr;
-
-	// For now this AI can only track whoever was the last player in the trigger
-	class APredictingCharacter* TargetChar = nullptr;
 };
