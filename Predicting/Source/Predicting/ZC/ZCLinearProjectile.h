@@ -15,7 +15,7 @@ public:
 	// Sets default values for this actor's properties
 	AZCLinearProjectile();
 
-	void Init(const FVector& StartLoc, const FVector& EndLoc);
+	void Init(const FVector& EndLoc);
 
 	FORCEINLINE float GetSpeed() { return Speed; }
 
@@ -27,15 +27,23 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	// Move in a constant speed in a constant direction
+	void Move(float DeltaTime);
+
+	void CheckForImpact();
+
 private:
 	// How fast the projectile moves (constant speed)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float Speed = 0.f;
+	float Speed = 600.f;
 
 	// Visual form of the projectile
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* ProjectileMesh = nullptr;
+	class USceneComponent* SceneComp = nullptr;
 
 	// Distance traveled before destroying itself
-	float KillDistance = 500.f;
+	float KillDistance = 50.f;
+	
+	// Intended impact point of then projectile
+	FVector ImpactPoint;
 };

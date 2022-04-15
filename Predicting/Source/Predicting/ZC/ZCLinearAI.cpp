@@ -168,8 +168,12 @@ void AZCLinearAI::FireProjectile()
 			AZCLinearProjectile* Proj = GetWorld()->SpawnActor<AZCLinearProjectile>(ProjectileClass);
 			if (Proj)
 			{
+				// Spawns the projectile at our AIs position pointing in the same direction
+				Proj->SetActorRotation(GetActorRotation());
+				Proj->SetActorLocation(GetActorLocation());
+
 				FVector ExpectedTargetLoc = PredictTargetLocation(Proj->GetSpeed());
-				Proj->Init(GetActorLocation(), ExpectedTargetLoc);
+				Proj->Init(ExpectedTargetLoc);
 			}
 		}
 	}
