@@ -88,10 +88,10 @@ void AZCLinearAI::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FaceTarget();
+	FaceTarget(DeltaTime);
 }
 
-void AZCLinearAI::FaceTarget()
+void AZCLinearAI::FaceTarget(float DeltaTime)
 {
 	if (TargetChar)
 	{
@@ -99,7 +99,7 @@ void AZCLinearAI::FaceTarget()
 		
 		const FVector AIForwardDir = GetActorForwardVector(); // forward AI direction
 		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + AIForwardDir * FAR_AWAY, FColor:: Blue);
-
+		
 		const FVector DirToTarget = TargetChar->GetActorLocation() - GetActorLocation(); // direction towards target
 		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + DirToTarget * FAR_AWAY, FColor::Yellow);
 
@@ -108,13 +108,10 @@ void AZCLinearAI::FaceTarget()
 		{
 			GEngine->AddOnScreenDebugMessage(0, -1.f, FColor::Red, FString::Printf(TEXT("ArcDistToTarget: %f"), ArcDistToTarget));
 		}
-
-		// angle in rad = acos(dot(A,B))
 		float AngleDiffToTargetDeg = FMath::RadiansToDegrees(FMath::Acos(ArcDistToTarget));
 
 		
 		// Determine if the player is on the right or left so we know if we need to + or - the angle
-		
 		const FVector AIRightDir = GetActorRightVector();
 		float AmountRightOrLeft = FVector::DotProduct(AIRightDir.GetSafeNormal(), DirToTarget.GetSafeNormal());
 		if (GEngine)
@@ -123,7 +120,26 @@ void AZCLinearAI::FaceTarget()
 		}
 
 
-		// Rotate towards the target than many degress.
+		// Rotate towards the target than many degrees.
+
+		if (FMath::Abs(AmountRightOrLeft) > 0.01f) // Allow for _relatively_ close rotation, we don't need to be pinpoint exact (which actually causes issues with blipping back and forth if we try to get too exact)
+		{
+			FRotator CurrentRot = GetActorRotation();
+			float NewYaw = CurrentRot.Yaw;
+			if (AmountRightOrLeft < 0) // Target on right
+			{
+				NewYaw -= AngleDiffToTargetDeg;
+			}
+			else // Target on left
+			{
+				NewYaw += AngleDiffToTargetDeg;
+			}
+
+			// Lerp for smooth movement
+			CurrentRot.Yaw = FMath::FInterpTo(CurrentRot.Yaw, NewYaw, DeltaTime, 10.f);
+			// Set new posiiton
+			SetActorRotation(CurrentRot);
+		}
 	}
 }
 

@@ -33,7 +33,7 @@ public:
 
 
 private:
-	void FaceTarget();
+	void FaceTarget(float DeltaTime);
 
 	// Proximity trigger acting as our AI's eyes. Players within the trigger are now targets
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
