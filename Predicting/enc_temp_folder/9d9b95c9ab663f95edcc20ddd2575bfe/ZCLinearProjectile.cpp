@@ -35,12 +35,6 @@ void AZCLinearProjectile::Init(const FVector& EndLoc)
 void AZCLinearProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// turn off physics for the mesh for now
-	StaticMesh->SetSimulatePhysics(false);
-	StaticMesh->SetEnableGravity(false);
-	StaticMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 // Called every frame
