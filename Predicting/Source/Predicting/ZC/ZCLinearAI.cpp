@@ -3,6 +3,12 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/SceneComponent.h"
+#include "DrawDebugHelpers.h"
+
+#ifndef FAR_AWAY
+#define FAR_AWAY 50'000
+#endif // !FAR_AWAY
+
 
 // Sets default values
 AZCLinearAI::AZCLinearAI()
@@ -82,5 +88,28 @@ void AZCLinearAI::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	FaceTarget();
+}
+
+void AZCLinearAI::FaceTarget()
+{
+	if (TargetChar)
+	{
+		// Compare the forward look dir of the AI and the direction to the target.
+		const FVector AIForwardDir = GetActorForwardVector(); // forward AI direction
+		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + AIForwardDir * FAR_AWAY, FColor:: Blue);
+
+		const FVector DirToTarget = TargetChar->GetActorLocation() - GetActorLocation(); // direction towards target
+		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + DirToTarget * FAR_AWAY, FColor::Yellow);
+
+		float AngleBetween = FVector::DotProduct(AIForwardDir.GetSafeNormal(), DirToTarget.GetSafeNormal());
+		if(GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(0, -1.f, FColor::Red, FString::Printf(TEXT("AngleBetween: %f"), AngleBetween));
+		}
+		
+		// Rotate towards the target than many degress.
+		// Use the AI.RightVector to determine what 'towards' means (+ or - angle)
+	}
 }
 
